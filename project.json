@@ -89,6 +89,15 @@
         "staticFilePath": "dist/photos/browser",
         "spa": true
       }
+    },
+    "component-test": {
+      "executor": "@nx/cypress:cypress",
+      "options": {
+        "cypressConfig": "cypress.config.ts",
+        "testingType": "component",
+        "skipServe": true,
+        "devServerTarget": "photos:build"
+      }
     }
   }
 }
