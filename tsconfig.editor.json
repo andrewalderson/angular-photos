@@ -11,6 +11,8 @@
     "**/*.cy.ts",
     "**/*.cy.js",
     "**/*.cy.tsx",
-    "**/*.cy.jsx"
+    "**/*.cy.jsx",
+    "**/*.stories.ts",
+    "**/*.stories.js"
   ]
 }
