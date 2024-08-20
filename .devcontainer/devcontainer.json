@@ -3,20 +3,48 @@
 {
 	"name": "Node.js & TypeScript",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm"
-
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
+	"features": {
+		// add linux packages for Cypress to work
+		"ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
+			"packages": "libgtk2.0-0,libgtk-3-0,libgbm-dev,libnotify-dev,libgconf-2-4,libnss3,libxss1,libasound2,libxtst6,xauth,xvfb"
+		}
+	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
+	"forwardPorts": [
+		4200
+	],
+	// Need to set the network to the host (0.0.0.0) or the apps (Angular and Storybook) won't be accessible outside the container
+	// We could also set the host on the ng serve or storybook command in the project.json file but since this is a devcontainer
+	// specific issue we are setting it here.
+	"runArgs": [
+		"--network=host"
+	],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
-
+	"postCreateCommand": "npm install && npx cypress install",
 	// Configure tool-specific properties.
-	// "customizations": {},
-
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"angular.ng-template",
+				"nrwl.angular-console",
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint",
+				"firsttris.vscode-jest-runner"
+			],
+			"settings": {
+				"editor.codeActionsOnSave": {
+					"source.organizeImports": "always",
+					"source.fixAll": "always"
+				},
+				"editor.formatOnSave": true,
+				"git.inputValidation": true,
+				"git.inputValidationSubjectLength": 50,
+				"git.inputValidationLength": 72
+			}
+		}
+	}
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }
