@@ -1,3 +1,5 @@
+/// <reference types="@testing-library/cypress" />
+
 import { mount } from 'cypress/angular';
 // ***********************************************************
 // This example support/component.ts is processed and
@@ -13,9 +15,10 @@ import { mount } from 'cypress/angular';
 // You can read more here:
 // https://on.cypress.io/configuration
 // ***********************************************************
-
 // Import commands.ts using ES2015 syntax:
 import './commands';
+
+import '@testing-library/cypress/add-commands';
 
 // add component testing only related command here, such as mount
 declare global {
