@@ -2,22 +2,36 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   contentChild,
   Directive,
   effect,
+  ElementRef,
   inject,
+  InjectionToken,
   input,
   OnDestroy,
   TemplateRef,
   viewChild,
   ViewContainerRef,
 } from '@angular/core';
+import { LayoutFunction, TileDetails } from './layout/types';
 
 export type TileListDataSourceInput<T> = readonly T[];
 
 export const TILE_LIST_TEMPLATE = `<ng-container appTileListTileOutlet />`;
 
 export const TILE_LIST_SELECTOR = 'app-tile-list';
+
+export interface ITileListOptions<T> {
+  // this not only allows setting the layoutFunction for all tile grids in the app
+  // but we need it for Storybook because we can't use function as inputs in Storybook
+  defaultLayoutFunction?: LayoutFunction<T>;
+}
+
+export const TILE_LIST_OPTIONS = new InjectionToken<ITileListOptions<any>>(
+  'tileListOptions'
+);
 
 @Directive({
   selector: '[appTileListTileOutlet]',
@@ -69,6 +83,8 @@ export class TileListTileDirective {}
 })
 export class TileListComponent<T> implements OnDestroy {
   #changeDetectorRef = inject(ChangeDetectorRef);
+  #elementRef: ElementRef<HTMLElement> = inject(ElementRef);
+  #options = inject(TILE_LIST_OPTIONS, { optional: true });
 
   private _tileOutlet = viewChild.required(TileListTileOutletDirective);
 
@@ -76,20 +92,72 @@ export class TileListComponent<T> implements OnDestroy {
 
   dataSource = input.required<TileListDataSourceInput<T>>();
 
+  layoutFunction = input<LayoutFunction<T> | undefined>(
+    this.#options?.defaultLayoutFunction
+  );
+
+  tileGap = input<number>(0);
+
+  minTileSize = input<number>(200);
+
+  #tiles = computed(() => {
+    return this.#layoutTiles(
+      this.dataSource(),
+      this.layoutFunction(),
+      this.tileGap(),
+      this.minTileSize()
+    );
+  });
+
   constructor() {
-    // update tiles when data changes
-    effect(() => this.#renderTiles(this.dataSource()));
+    effect(() => {
+      this.#renderTiles(this.#tiles());
+    });
   }
 
   ngOnDestroy(): void {
     this._tileOutlet().viewContainer.clear();
   }
 
-  #renderTiles(dataSource: TileListDataSourceInput<T>) {
-    const viewContainer = this._tileOutlet().viewContainer;
-    dataSource.forEach((item) => {
-      viewContainer.createEmbeddedView(this._tileDef().template, {
-        $implicit: item,
+  #layoutTiles(
+    dataSource: TileListDataSourceInput<T>,
+    layoutFunction: LayoutFunction<T> | undefined,
+    tileGap: number,
+    minTileSize: number
+  ) {
+    if (!layoutFunction) {
+      return [];
+    }
+    const layoutWidth = this.#elementRef.nativeElement.clientWidth;
+    return layoutFunction(dataSource as T[], layoutWidth, tileGap, minTileSize)
+      .tiles;
+  }
+
+  #renderTiles(tiles: TileDetails<T>[]) {
+    tiles.forEach((tile) => {
+      const { item, bounds } = tile;
+
+      const view = this._tileOutlet().viewContainer.createEmbeddedView(
+        this._tileDef().template,
+        {
+          $implicit: item,
+        }
+      );
+
+      const element = view.rootNodes[0] as HTMLElement;
+
+      // need to convert all the numeric values in tile.bounds
+      // to a string of the value with 'px' appended
+      const tileBounds = Object.entries(bounds).reduce(
+        (accumulator, [key, value]) => {
+          return { ...accumulator, [key]: value + 'px' };
+        },
+        {}
+      );
+
+      Object.assign(element.style, {
+        position: 'absolute',
+        ...tileBounds,
       });
     });
 
